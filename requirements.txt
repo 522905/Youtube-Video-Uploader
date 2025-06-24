@@ -19,11 +19,11 @@ imageio-ffmpeg==0.6.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.2
-moviepy==1.0.3
+moviepy==1.0.2
 mutagen==1.47.0
 numpy==2.2.6
 oauthlib==3.2.2
-Pillow==9.5.0
+Pillow==9.4.0
 proglog==0.1.12
 proto-plus==1.26.1
 protobuf==6.31.1
