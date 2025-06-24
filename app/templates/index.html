@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YouTube Shorts Uploader</title>
+  <style>
+    body { font-family: Arial; padding: 30px; background: #f1f1f1; }
+    form, .message, .flash {
+      background: #fff; padding: 20px; margin: 20px auto; max-width: 700px;
+      border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    input, textarea, select {
+      width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 10px;
+      border: 1px solid #ccc; border-radius: 5px;
+    }
+    input[type=submit], button {
+      background: #007bff; color: white; border: none;
+      border-radius: 5px; cursor: pointer;
+    }
+    input[type=submit]:hover, button:hover { background: #0056b3; }
+    .flash { background: #fff3cd; border-left: 5px solid #ffc107; color: #856404; }
+    .spinner, .progress { display: none; text-align: center; margin-top: 20px; }
+    .spinner img { width: 40px; height: 40px; }
+    h2, h3 { text-align: center; }
+  </style>
+  <script>
+    function showProgress(message) {
+      document.getElementById('spinner').style.display = 'none';
+      document.querySelector('.progress').style.display = 'block';
+      document.getElementById('progressText').innerText = message || 'Processing...';
+      document.getElementById('progressBar').value = 0;
+
+      const pollInterval = setInterval(() => {
+        fetch('/progress')
+          .then(response => response.json())
+          .then(data => {
+            document.getElementById('progressBar').value = data.percent;
+            document.getElementById('progressText').innerText = `${data.status} (${data.percent}%)`;
+            if (data.percent >= 100) clearInterval(pollInterval);
+          })
+          .catch(() => clearInterval(pollInterval));
+      }, 1500);
+    }
+  </script>
+</head>
+<body>
+
+<h2>🎬 YouTube Shorts Uploader</h2>
+
+<!-- Step 1: Download video -->
+<form method="POST" action="/" onsubmit="showProgress('Downloading video...')">
+  <label for="video_url">🔗 YouTube Video URL:</label>
+  <input type="text" name="video_url" required placeholder="https://www.youtube.com/watch?v=...">
+
+  <label for="short_duration">🎬 Short Duration (10–60 seconds):</label>
+  <input type="number" name="short_duration" value="29" min="10" max="60">
+
+  <input type="submit" value="⬇️ Download Video">
+</form>
+
+<!-- Step 2: Split local file into Shorts -->
+<div class="message">
+  <h3>📤 Or Upload a Local Video to Create Shorts</h3>
+  <form method="POST" action="/split" enctype="multipart/form-data" onsubmit="showProgress('Creating shorts...')">
+    <label for="video_file">🎥 Upload Video File:</label>
+    <input type="file" name="video_file" accept="video/*" required>
+
+    <label for="short_duration">⏱️ Short Duration (seconds):</label>
+    <input type="number" name="short_duration" value="29" min="10" max="60">
+
+    <label>
+      <input type="checkbox" name="overlay_text" checked>
+      🖊️ Show "Part 1", "Part 2" overlay
+    </label>
+
+    <br><br>
+    <button type="submit">✂️ Create Shorts</button>
+  </form>
+</div>
+
+<!-- Step 3: After video is downloaded from URL -->
+{% if video_path %}
+<div class="message">
+  <h3>✅ Video Downloaded</h3>
+  <p><strong>File:</strong> {{ video_path }}</p>
+
+  <!-- Upload full video -->
+  <form method="POST" action="/upload_video" onsubmit="showProgress('Uploading full video...')">
+    <input type="hidden" name="video_path" value="{{ video_path }}">
+    <button type="submit">📺 Upload Full Video</button>
+  </form>
+</div>
+{% endif %}
+
+<!-- Step 4: After splitting -->
+{% if split_path %}
+<div class="message">
+  <h3>🎬 Shorts Ready to Upload</h3>
+  <form method="POST" action="/upload_shorts" onsubmit="showProgress('Uploading shorts...')">
+    <input type="hidden" name="shorts_folder" value="{{ split_path }}">
+
+    <label for="base_title">📄 Title Base (e.g. "My Clip"):</label>
+    <input type="text" name="base_title" value="My Short Clip" required>
+
+    <label for="description">📝 Description:</label>
+    <textarea name="description" rows="2">#Shorts</textarea>
+
+    <label for="tags">🏷️ Tags (comma separated):</label>
+    <input type="text" name="tags" value="shorts,fun,python">
+
+    <button type="submit">📤 Upload Shorts</button>
+  </form>
+</div>
+{% endif %}
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="flash">
+      <ul>{% for msg in messages %}<li>{{ msg }}</li>{% endfor %}</ul>
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- Spinner (optional alternative UI) -->
+<div id="spinner" class="spinner">
+  <img src="https://i.imgur.com/llF5iyg.gif" alt="Loading...">
+  <p id="spinner-message">Please wait...</p>
+</div>
+
+<!-- Progress Bar UI -->
+<div class="progress">
+  <h3>📈 Task Progress</h3>
+  <progress id="progressBar" value="0" max="100" style="width:100%;"></progress>
+  <p id="progressText">Waiting...</p>
+</div>
+
+</body>
+</html>
